@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Code Atlas — CS Knowledge Base",
+  title: "Programming Brain — CS Knowledge Base",
   description:
     "A comprehensive, beautifully structured computer science knowledge base covering DSA, Design Patterns, Operating Systems, System Design, and Low-Level Design.",
   keywords: [

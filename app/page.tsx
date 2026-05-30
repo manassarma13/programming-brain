@@ -49,7 +49,7 @@ export default function HomePage() {
 
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 animate-fade-in-up stagger-1">
             <span className="bg-gradient-to-r from-[var(--color-gradient-start)] via-[var(--color-gradient-mid)] to-[var(--color-gradient-end)] bg-clip-text text-transparent">
-              Code Atlas
+              Programming Brain
             </span>
           </h1>
 

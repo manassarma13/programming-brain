@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps) {
 
   const name = categoryDisplayNames[category] || category;
   return {
-    title: `${name} | Code Atlas`,
+    title: `${name} | Programming Brain`,
     description: categoryDescriptions[category] || `Explore our ${name} articles.`,
   };
 }
