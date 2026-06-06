@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CategoryCard from "@/components/CategoryCard";
 import {
   getCategories,
   getAllArticlesInCategory,
@@ -7,13 +8,6 @@ import {
   categoryIcons,
 } from "@/lib/mdParser";
 
-const difficultyColors: Record<string, string> = {
-  beginner:
-    "bg-[var(--color-beginner)]/10 text-[var(--color-beginner)] border border-[var(--color-beginner)]/20",
-  intermediate:
-    "bg-[var(--color-intermediate)]/10 text-[var(--color-intermediate)] border border-[var(--color-intermediate)]/20",
-  advanced: "bg-[var(--color-advanced)]/10 text-[var(--color-advanced)] border border-[var(--color-advanced)]/20",
-};
 
 export default function HomePage() {
   const categories = getCategories();
@@ -77,83 +71,7 @@ export default function HomePage() {
       <section className="max-w-6xl mx-auto px-[var(--spacing-page)] py-16 md:py-24">
         <div className="grid gap-8">
           {categoryData.map((category, idx) => (
-            <div
-              key={category.slug}
-              className={`group rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] overflow-hidden hover:border-[var(--color-border-accent)] transition-all duration-300 animate-fade-in-up stagger-${idx + 1}`}
-            >
-              {/* Category header */}
-              <div className="p-6 md:p-8 border-b border-[var(--color-border)]">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <Link
-                      href={`/${category.slug}`}
-                      className="flex items-center gap-3 group/link"
-                    >
-                      <span className="text-3xl">{category.icon}</span>
-                      <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)] group-hover/link:text-[var(--color-text-accent)] transition-colors">
-                        {category.name}
-                      </h2>
-                    </Link>
-                    <p className="mt-2 text-[var(--color-text-secondary)] text-sm md:text-base max-w-xl">
-                      {category.description}
-                    </p>
-                  </div>
-                  <span className="hidden md:inline-flex items-center px-3 py-1 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)]">
-                    {category.articles.length}{" "}
-                    {category.articles.length === 1 ? "article" : "articles"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Articles list */}
-              <div className="divide-y divide-[var(--color-border)]">
-                {category.articles.map((article) => (
-                  <Link
-                    key={article.slug}
-                    href={`/${category.slug}/${article.slug}`}
-                    className="flex items-center justify-between p-4 md:px-8 md:py-5 hover:bg-[var(--color-bg-card)] transition-colors duration-150 group/article"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-[var(--color-text-primary)] group-hover/article:text-[var(--color-text-accent)] transition-colors truncate">
-                        {article.title}
-                      </h3>
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {article.tags.slice(0, 4).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 rounded-md text-xs bg-[var(--color-tag-bg)] text-[var(--color-tag-text)] border border-[var(--color-tag-border)]"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 ml-4 shrink-0">
-                      <span
-                        className={`px-2.5 py-1 rounded-md text-xs font-medium ${
-                          difficultyColors[article.difficulty] ?? ""
-                        }`}
-                      >
-                        {article.difficulty}
-                      </span>
-                      <svg
-                        className="w-4 h-4 text-[var(--color-text-muted)] group-hover/article:text-[var(--color-text-accent)] transition-transform group-hover/article:translate-x-0.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <CategoryCard key={category.slug} category={category} idx={idx} />
           ))}
         </div>
       </section>
