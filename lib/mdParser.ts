@@ -44,6 +44,9 @@ export const categoryDisplayNames: Record<string, string> = {
   "operating-systems": "Operating Systems",
   "system-design": "System Design (HLD)",
   lld: "Low-Level Design (LLD)",
+  frontend: "Frontend Fundamentals",
+  backend: "Backend Engineering",
+  languages: "Languages & Runtimes",
 };
 
 /**
@@ -58,6 +61,12 @@ export const categoryDescriptions: Record<string, string> = {
   "system-design":
     "Microservices, Caching, Sharding, CAP Theorem — architect systems at scale.",
   lld: "SOLID, DRY, API Design, UML — craft maintainable, elegant code.",
+  frontend:
+    "Browser internals, JavaScript engine, call stack, event loop, Browser APIs, CSS, performance & security — everything the browser does under the hood.",
+  backend:
+    "Node.js server architecture, Phoenix LiveView, Rails Hotwire, real-time systems — the server-side perspective.",
+  languages:
+    "Language speed benchmarks, choosing the right tool, idioms and best practices across Go, Rust, Elixir, Ruby, Python, and more.",
 };
 
 /**
@@ -69,6 +78,9 @@ export const categoryIcons: Record<string, string> = {
   "operating-systems": "⚙️",
   "system-design": "🌐",
   lld: "📐",
+  frontend: "🖥️",
+  backend: "🔧",
+  languages: "⚡",
 };
 
 /**
