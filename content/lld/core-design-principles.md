@@ -1,14 +1,14 @@
 ---
-title: "SOLID Principles & DRY"
+title: "Software Design Principles"
 category: "Low-Level Design (LLD)"
 difficulty: "intermediate"
-tags: ["SOLID", "SRP", "OCP", "LSP", "ISP", "DIP", "DRY", "clean-code", "design"]
+tags: ["SOLID", "SRP", "OCP", "LSP", "ISP", "DIP", "DRY", "KISS", "YAGNI", "Law of Demeter", "Composition over Inheritance", "clean-code", "design"]
 order: 1
 ---
 
-# SOLID Principles & DRY
+# Core Software Design Principles
 
-SOLID is a set of five design principles that, when followed together, produce code that is modular, testable, and resilient to change. Coined by Robert C. Martin (Uncle Bob), they are the foundation of clean object-oriented and functional design.
+SOLID is a set of five design principles that, when followed together, produce code that is modular, testable, and resilient to change. Coined by Robert C. Martin (Uncle Bob), they are the foundation of clean object-oriented and functional design. Along with other foundational principles like DRY, KISS, and YAGNI, they form the bedrock of writing excellent software.
 
 > The goal isn't to follow rules for their own sake. The goal is code that is easy to **understand**, **change**, and **test** — principles are the means.
 
@@ -623,7 +623,207 @@ function formatWithUnit(value: number, unit: string): string {
 
 ---
 
-## SOLID Together
+## KISS — Keep It Simple, Stupid
+
+> **Most systems work best if they are kept simple rather than made complicated.**
+
+Complexity is the enemy of maintainability. If a problem can be solved with a simple `if` statement, don't build a polymorphic rules engine.
+
+### Violation
+
+```typescript
+// ❌ Over-engineered: Using an abstraction where none is needed
+interface StringReverser {
+  reverse(input: string): string;
+}
+
+class DefaultStringReverser implements StringReverser {
+  reverse(input: string): string {
+    return input.split('').reverse().join('');
+  }
+}
+
+class ReverserFactory {
+  static getReverser(): StringReverser {
+    return new DefaultStringReverser();
+  }
+}
+
+const reverser = ReverserFactory.getReverser();
+const reversed = reverser.reverse("hello");
+```
+
+### Fixed
+
+```typescript
+// ✅ Keep it simple
+const reversed = "hello".split('').reverse().join('');
+```
+
+**Smell:** If it takes 5 files and an interface to reverse a string, you've violated KISS.
+
+---
+
+## YAGNI — You Aren't Gonna Need It
+
+> **Always implement things when you actually need them, never when you just foresee that you need them.**
+
+Every feature you build has a carrying cost: it must be tested, documented, and maintained. Building features "just in case" pollutes the codebase with dead weight.
+
+### Violation
+
+```typescript
+class CacheManager {
+  constructor() {
+    // We only use Redis right now, but maybe one day we'll use Memcached!
+    this.drivers = {
+      redis: new RedisDriver(),
+      memcached: new MemcachedDriver(), // Unused, but still maintained
+      local: new LocalMapDriver()       // Unused, but still tested
+    };
+  }
+}
+```
+
+### Fixed
+
+```typescript
+// Build what you need today. When the requirement arrives, refactor.
+class CacheManager {
+  constructor(private redis: Redis) {}
+}
+```
+
+**Smell:** Code wrapped in `if (futureRequirement) { ... }` or interfaces with only one implementation that has "Base" in the name.
+
+---
+
+## Composition Over Inheritance
+
+> **Classes should achieve polymorphic behavior and code reuse by their composition (containing instances of other classes that implement the desired functionality) rather than inheritance from a base or parent class.**
+
+Inheritance creates rigid, deeply coupled hierarchies. Composition is flexible and flat.
+
+### Violation — The Gorilla Banana Problem
+
+*“You wanted a banana but what you got was a gorilla holding the banana and the entire jungle.” — Joe Armstrong*
+
+```typescript
+// ❌ Rigid Hierarchy
+class Character {
+  move() { /* ... */ }
+}
+
+class Player extends Character {
+  attack() { /* ... */ }
+}
+
+class Enemy extends Character {
+  attack() { /* ... */ }
+}
+
+// Now we need a "Non-Attacking Enemy" or an "Attacking NPC". 
+// The hierarchy breaks down. We either duplicate code or push methods up to the base class where they don't belong.
+```
+
+### Fixed — Composition
+
+```typescript
+// ✅ Behaviors are composed, not inherited
+class Movable {
+  move() { /* ... */ }
+}
+
+class Attackable {
+  attack() { /* ... */ }
+}
+
+class Player {
+  constructor(private movement: Movable, private combat: Attackable) {}
+  
+  act() {
+    this.movement.move();
+    this.combat.attack();
+  }
+}
+
+class PeacefulNPC {
+  constructor(private movement: Movable) {} // Just compose what it needs!
+  
+  act() {
+    this.movement.move();
+  }
+}
+```
+
+**Smell:** Deep inheritance chains (more than 2 levels), or a subclass overriding a method just to throw `NotSupportedError` (which also violates LSP).
+
+---
+
+## Law of Demeter (Principle of Least Knowledge)
+
+> **A module should not know about the inner details of the objects it manipulates.**
+
+Also known as "Don't talk to strangers." An object should only call methods on:
+1. Itself
+2. Its parameters
+3. Objects it creates
+4. Its direct component objects
+
+### Violation — Train Wrecks
+
+```typescript
+class Order {
+  customer: Customer;
+}
+
+class Customer {
+  profile: Profile;
+}
+
+class Profile {
+  getAddress(): Address { /* ... */ }
+}
+
+// ❌ Train Wreck: The caller knows exactly how an Order is structured internally
+function printShippingLabel(order: Order) {
+  // If the structure of Customer or Profile changes, this breaks!
+  const address = order.customer.profile.getAddress();
+  console.log(address);
+}
+```
+
+### Fixed — Tell, Don't Ask
+
+```typescript
+// ✅ The Order exposes what we need directly, hiding its internal structure
+class Order {
+  private customer: Customer;
+
+  getShippingAddress(): Address {
+    return this.customer.getShippingAddress();
+  }
+}
+
+class Customer {
+  private profile: Profile;
+
+  getShippingAddress(): Address {
+    return this.profile.getAddress();
+  }
+}
+
+function printShippingLabel(order: Order) {
+  const address = order.getShippingAddress(); // Caller talks to its direct friend
+  console.log(address);
+}
+```
+
+**Smell:** Multiple dots in a row (`a.getB().getC().doSomething()`), exposing deep structural coupling.
+
+---
+
+## Design Principles Together
 
 The principles reinforce each other:
 
@@ -663,3 +863,7 @@ graph TB
 | **ISP** | "Does every implementor use all of this interface?" | Stub implementations that throw `NotImplementedError` |
 | **DIP** | "Does my class `new` its dependencies?" | `new ConcreteClass()` in a method body, untestable classes |
 | **DRY** | "Is this knowledge represented in more than one place?" | Changing a rule requires updating multiple files |
+| **KISS**| "Can this be solved with less abstraction?" | Complex patterns used for simple logic |
+| **YAGNI**| "Do we need this right now?" | Unused interfaces and features built "just in case" |
+| **Composition**| "Is this a 'has-a' or 'is-a' relationship?" | Deep inheritance trees, forced overrides |
+| **Demeter**| "Am I reaching too deeply into this object?" | Long dot-chains (`a.b.c.d()`) |

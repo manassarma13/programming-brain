@@ -34,7 +34,7 @@ Agent Tasks:
 
 ### Logic Extraction
 
-The agent identifies code that is **copy-pasted or logically duplicated** across files and flags it for extraction.
+The agent identifies code that is **copy-pasted or logically duplicated** across files and flags it for extraction. Rather than developers manually hunting for duplicate blocks, the agent semantically understands when two pieces of code achieve the exact same outcome and proposes a unified utility function.
 
 ```typescript
 // ❌ Agent detects: same pagination logic in 6 controller files
@@ -60,6 +60,8 @@ export function parsePagination(query: Record<string, unknown>) {
 ```
 
 ### Centralized Constants
+
+Magic strings and numbers scattered throughout a codebase make sweeping changes difficult and error-prone. The agent scans for recurring literal values (like timeouts, retry limits, or token expirations) and proposes extracting them into a centralized configuration file.
 
 ```typescript
 // ❌ Agent detects: magic numbers/strings scattered across codebase
@@ -91,6 +93,8 @@ export const RATE_LIMIT = {
 
 ### Modularization Detection
 
+Files that grow too large inevitably become dumping grounds for unrelated logic. The agent uses predefined heuristics to flag files or functions that have grown beyond manageable cognitive limits, suggesting boundaries where they can be split.
+
 ```
 Agent heuristics that flag a file for split:
   - File > 400 lines
@@ -103,9 +107,11 @@ Agent heuristics that flag a file for split:
 
 ---
 
-## 2. SOLID Principle Violations
+## 2. Architectural Integrity (SOLID & Beyond)
 
 ### Single Responsibility (SRP)
+
+Classes or modules that handle multiple concerns are fragile. The agent scans for "God classes" that mix presentation logic, business rules, and infrastructure interactions, proposing a structural decomposition so each component has only one reason to change.
 
 ```typescript
 // ❌ Agent flags: UserController doing too much
@@ -144,6 +150,8 @@ class UserController {
 
 ### Open/Closed (OCP)
 
+Hardcoded conditional chains make adding new features risky. The agent looks for growing `switch` or `if/else` statements that check the "type" of an object, suggesting polymorphic patterns (like the Strategy Pattern) so new logic can be added via new files rather than modifying existing ones.
+
 ```typescript
 // ❌ Agent flags: switch statement that needs modification for each new type
 function processPayment(method: string, amount: number) {
@@ -174,7 +182,52 @@ class PaymentService {
 }
 ```
 
+### Liskov Substitution (LSP)
+
+Inheritance should guarantee behavioral consistency. The agent flags subclasses that break the implicit contract of their parents—such as throwing unexpected exceptions, returning inconsistent types, or requiring stricter conditions than the base class.
+
+```typescript
+// ❌ Agent flags: Subclass changes expected behavior by throwing an unexpected error
+class FileCache {
+  set(key: string, value: string) { /* writes to file */ }
+}
+
+class ReadOnlyCache extends FileCache {
+  set(key: string, value: string) {
+    throw new Error("Cannot write to read-only cache"); // Breaks LSP! Caller didn't expect this.
+  }
+}
+
+// ✅ Agent proposes: Redesign hierarchy to not promise what it can't deliver
+interface ReadableCache { get(key: string): string; }
+interface WritableCache extends ReadableCache { set(key: string, value: string): void; }
+```
+
+### Interface Segregation (ISP)
+
+Components shouldn't depend on things they don't use. The agent detects when massive objects are passed into functions or components that only utilize a tiny fraction of their properties, proposing slimmer, role-specific interfaces.
+
+```typescript
+// ❌ Agent flags: "God-interface" used where only a fraction is needed
+// `User` has 50 properties (email, password, address, etc.), but component only uses 2
+function UserAvatar({ user }: { user: User }) {
+  return <img src={user.avatarUrl} alt={user.name} />;
+}
+
+// ✅ Agent proposes: Extract minimal required interface for the dependency
+interface AvatarUser {
+  avatarUrl: string;
+  name: string;
+}
+
+function UserAvatar({ user }: { user: AvatarUser }) {
+  return <img src={user.avatarUrl} alt={user.name} />;
+}
+```
+
 ### Dependency Inversion (DIP)
+
+High-level business logic shouldn't be entangled with low-level implementation details. The agent looks for direct instantiations of external services or databases within core logic domains, proposing the injection of interfaces to keep the core testable and decoupled.
 
 ```typescript
 // ❌ Agent flags: high-level module depends on concrete implementation
@@ -204,11 +257,55 @@ class OrderService {
 }
 ```
 
+### KISS & YAGNI
+
+Over-engineering adds friction. The agent proactively identifies unused abstractions, empty interfaces, and excessively complex design patterns applied to simple problems, recommending their removal in favor of straightforward implementations.
+
+```typescript
+// ❌ Agent flags: Dead code / "Just in case" abstractions (YAGNI violation)
+interface CacheDriver { /* ... */ }
+class MemcachedDriver implements CacheDriver { /* ... */ } // Agent detects: never instantiated anywhere in the codebase
+
+// ❌ Agent flags: Over-engineering (KISS violation)
+class StringReverseStrategyFactory {
+  create() { return new DefaultReverseStrategy(); }
+}
+// Agent proposes: replace 3 files with a simple utility function
+```
+
+### Composition Over Inheritance
+
+Deep inheritance trees create brittle codebases where changing a base class breaks distant descendants. The agent detects deep nesting and proposes flattening the architecture by composing independent behavioral modules instead.
+
+```typescript
+// ❌ Agent flags: Deep inheritance tree (> 2 levels)
+class AdminUser extends AuthenticatedUser extends BaseUser extends Entity { /* ... */ }
+
+// ✅ Agent proposes: Flatten hierarchy using composition
+class AdminUser {
+  constructor(private auth: Authenticator, private permissions: PermissionManager) {}
+}
+```
+
+### Law of Demeter
+
+Objects should only talk to their immediate friends. The agent flags "train wrecks"—long chains of method calls reaching deep into the structure of unrelated objects—and suggests delegating the behavior closer to where the data lives.
+
+```typescript
+// ❌ Agent flags: Train wreck (chaining > 2 dots on different domain objects)
+const zipCode = order.getCustomer().getProfile().getAddress().getZipCode();
+
+// ✅ Agent proposes: Tell, Don't Ask
+const zipCode = order.getCustomerZipCode(); // Delegate the knowledge down
+```
+
 ---
 
 ## 3. Data Structures & Algorithm Complexity
 
 ### O(n²) → O(n) Detection
+
+Nested loops over large collections are silent performance killers. The agent analyzes algorithmic complexity, specifically hunting for `Array.find` or `Array.filter` inside `.map` or `for` loops. It automatically proposes pre-computing a Hash Map to reduce time complexity from quadratic to linear.
 
 ```typescript
 // ❌ Agent flags: O(n²) lookup — common in JS code
@@ -233,6 +330,8 @@ function getOrdersWithUserNames(orders: Order[], users: User[]) {
 
 ### Set for Membership Checks
 
+Repeatedly checking if an item exists in a large array scales poorly. The agent flags `.includes()` or `.indexOf()` calls within frequent operations and suggests using a `Set` for instant O(1) lookups.
+
 ```typescript
 // ❌ Agent flags: Array.includes() in hot loop — O(n) per check
 const BLOCKED_DOMAINS = ['spam.com', 'trash.net', 'junk.io'];
@@ -252,6 +351,8 @@ function isBlocked(email: string) {
 
 ### Design Pattern Suggestions
 
+Based on structural smells, the agent can recommend specific Gang of Four design patterns to resolve underlying architectural tension.
+
 | Agent detects | Suggests |
 |---|---|
 | Global mutable variables accessed everywhere | Context/Provider or dependency injection |
@@ -266,6 +367,8 @@ function isBlocked(email: string) {
 ## 4. Performance Optimisation
 
 ### Debounce / Throttle Audit
+
+Unbound event listeners (like scroll, resize, or keypress) can easily overload the main thread. The agent scans UI code for raw event attachments and recommends applying `throttle` (for continuous but rate-limited execution) or `debounce` (to wait until the action stops).
 
 ```typescript
 // ❌ Agent flags: unthrottled high-frequency handler
@@ -297,6 +400,8 @@ input.addEventListener('input', debounce(() => {
 
 ### Memoization Opportunities
 
+Re-running expensive calculations on every render destroys frontend performance. The agent detects intensive array operations (sorting, mapping large sets) inside render paths and proposes wrapping them in memoization hooks to preserve results across renders.
+
 ```typescript
 // ❌ Agent flags: expensive computation inside render/hot path
 function ProductList({ products, filters }) {
@@ -319,6 +424,8 @@ const filtered = useMemo(
 
 ### Lazy Loading Detection
 
+Loading massive dependencies upfront bloats the initial bundle size. The agent checks bundle weights of static imports and flags large libraries that are only used conditionally, proposing dynamic imports (`await import()`) to defer their loading.
+
 ```typescript
 // ❌ Agent flags: heavy library imported eagerly in main bundle
 import { Chart } from 'chart.js'; // 180KB — loaded even if user never sees a chart
@@ -335,6 +442,8 @@ async function renderChart(canvas: HTMLCanvasElement, data: ChartData) {
 ## 5. Error Handling & Security
 
 ### Missing Error Boundaries
+
+An unhandled exception in an async function can crash a Node.js process. The agent statically analyzes all route handlers and background tasks to ensure they are wrapped in standard `try/catch` blocks or appropriate middleware boundaries.
 
 ```typescript
 // ❌ Agent flags: unhandled promise rejection — crashes the entire request
@@ -358,6 +467,8 @@ const asyncHandler = (fn) => (req, res, next) =>
 
 ### Input Sanitization
 
+Trusting user input is the root of most security vulnerabilities. The agent detects unescaped data entering the DOM (XSS), raw string interpolation into SQL queries (SQLi), and unsanitized file paths (Path Traversal), mandating immediate safety wrappers.
+
 ```typescript
 // ❌ Agent flags: raw user input directly in DOM (XSS vector)
 commentDiv.innerHTML = req.body.comment;
@@ -370,7 +481,7 @@ const file = path.join('/uploads', req.params.filename); // ../../../../etc/pass
 
 // ✅ Agent proposes:
 import DOMPurify from 'dompurify';
-commentDiv.innerHTML = DOMPurify.sanitize(req.body.comment);
+commentDiv..innerHTML = DOMPurify.sanitize(req.body.comment);
 
 // Parameterised query — always
 const user = await db.query('SELECT * FROM users WHERE name = $1', [req.query.name]);
@@ -381,6 +492,8 @@ if (!safe.startsWith('/uploads')) throw new Error('Path traversal detected');
 ```
 
 ### Debug Artifact Cleanup
+
+Leftover debugging code clutters logs and can leak sensitive information. The agent automatically strips out rogue console statements, resolves stale TODOs, and removes commented-out code blocks prior to deployment.
 
 ```
 Agent scans for and removes:
@@ -396,7 +509,7 @@ Agent scans for and removes:
 
 ## The Refactoring Report
 
-After scanning, the agent produces a structured report:
+After scanning, the agent produces a structured report outlining required fixes, warnings, and automatically applied cleanups. This report serves as a final quality dashboard for the engineering team.
 
 ```markdown
 ## Pre-Deployment Refactoring Report
@@ -428,6 +541,8 @@ Estimated refactoring effort for warnings: ~4 hours
 
 ## Configuring the Agent
 
+Development teams can tune the agent's strictness by configuring thresholds, enabling/disabling specific sweeps, and defining which issues block deployment versus which are merely logged as warnings.
+
 ```yaml
 # .ai-review.yml
 version: 2
@@ -446,6 +561,13 @@ rules:
     max_file_lines: 400
     max_function_lines: 50
     max_cyclomatic_complexity: 15
+
+  architecture:
+    enabled: true
+    max_inheritance_depth: 2
+    max_dot_chain_length: 3
+    flag_unused_implementations: true
+    detect_over_engineering: true
 
   performance:
     enabled: true
