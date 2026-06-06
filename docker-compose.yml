@@ -6,7 +6,8 @@ services:
     ports:
       - "1001:1001"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:1001/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:1001/"]
       interval: 30s
       timeout: 5s
       retries: 3
+

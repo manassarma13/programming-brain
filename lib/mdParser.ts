@@ -47,6 +47,9 @@ export const categoryDisplayNames: Record<string, string> = {
   frontend: "Frontend Fundamentals",
   backend: "Backend Engineering",
   languages: "Languages & Runtimes",
+  databases: "Databases",
+  devops: "DevOps & Infrastructure",
+  "ai-engineering": "AI-Driven Engineering",
 };
 
 /**
@@ -67,6 +70,12 @@ export const categoryDescriptions: Record<string, string> = {
     "Node.js server architecture, Phoenix LiveView, Rails Hotwire, real-time systems — the server-side perspective.",
   languages:
     "Language speed benchmarks, choosing the right tool, idioms and best practices across Go, Rust, Elixir, Ruby, Python, and more.",
+  databases:
+    "SQL, NoSQL, indexing, query optimisation, ACID transactions, replication — how data is stored and retrieved at scale.",
+  devops:
+    "Docker, CI/CD, Kubernetes, monitoring, observability — shipping and operating software reliably.",
+  "ai-engineering":
+    "AI-driven development workflows, agent orchestration, automated refactoring, prompt engineering, and the human-AI collaboration model for 2026 and beyond.",
 };
 
 /**
@@ -81,6 +90,9 @@ export const categoryIcons: Record<string, string> = {
   frontend: "🖥️",
   backend: "🔧",
   languages: "⚡",
+  databases: "🗄️",
+  devops: "🚀",
+  "ai-engineering": "🤖",
 };
 
 /**
